@@ -50,52 +50,81 @@ abstract class Provider {
 	abstract public function getName() : string;
 
 	/**
+	 * Fork Foxy : les donnees sont clavees par UUID, plus par pseudo.
+	 * Le pseudo n'est utilise que pour l'affichage, la resolution des
+	 * sessions hors ligne et le suivi des changements de gamertag.
+	 */
+
+	/**
 	 * @phpstan-return Promise<?UserData>
 	 */
-	abstract public function getUserData(string $name) : Promise;
+	abstract public function getUserData(string $uuid) : Promise;
+
+	/**
+	 * Recherche par pseudo (sessions hors ligne, claim au join).
+	 *
+	 * @phpstan-return Promise<?UserData>
+	 */
+	abstract public function getUserDataByName(string $name) : Promise;
 
 	/**
 	 * @phpstan-return Promise<bool>
 	 */
-	abstract public function isInDb(string $name) : Promise;
+	abstract public function isInDb(string $uuid) : Promise;
+
+	/**
+	 * Reattache une ligne existante (creee par pseudo) au vrai UUID du joueur.
+	 *
+	 * @param null|Closure(): void $onSuccess
+	 * @param null|Closure(): void $onError
+	 */
+	abstract public function claimUser(string $uuid, string $name, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
+
+	/**
+	 * Met a jour le pseudo stocke (changement de gamertag Xbox).
+	 *
+	 * @param null|Closure(): void $onSuccess
+	 * @param null|Closure(): void $onError
+	 */
+	abstract public function updateName(string $uuid, string $name, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
 
 	/**
 	 * @param array<string, ?int>  $ranks
 	 * @param null|Closure(): void $onSuccess
 	 * @param null|Closure(): void $onError
 	 */
-	abstract public function setRanks(string $name, array $ranks, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
+	abstract public function setRanks(string $uuid, string $name, array $ranks, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
 
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	abstract public function setRank(string $name, string $rank, ?int $expTime = null) : Promise;
+	abstract public function setRank(string $uuid, string $name, string $rank, ?int $expTime = null) : Promise;
 
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	abstract public function removeRank(string $name, string $rank) : Promise;
+	abstract public function removeRank(string $uuid, string $rank) : Promise;
 
 	/**
 	 * @param array<string, ?int>  $permisions
 	 * @param null|Closure(): void $onSuccess
 	 * @param null|Closure(): void $onError
 	 */
-	abstract public function setPermissions(string $name, array $permisions, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
+	abstract public function setPermissions(string $uuid, string $name, array $permisions, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
 
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	abstract public function setPermission(string $name, string $permission, ?int $expTime = null) : Promise;
+	abstract public function setPermission(string $uuid, string $name, string $permission, ?int $expTime = null) : Promise;
 
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	abstract public function removePermission(string $name, string $permission) : Promise;
+	abstract public function removePermission(string $uuid, string $permission) : Promise;
 
 	/**
 	 * @param null|Closure(): void $onSuccess
 	 * @param null|Closure(): void $onError
 	 */
-	abstract public function delete(string $name, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
+	abstract public function delete(string $uuid, ?Closure $onSuccess = null, ?Closure $onError = null) : void;
 }

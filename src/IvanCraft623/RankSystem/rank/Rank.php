@@ -60,6 +60,11 @@ final class Rank {
 	private array $inheritance = [];
 
 	/**
+	 * Fork Foxy : famille du rank (moderation ou jeu).
+	 */
+	private RankType $type;
+
+	/**
 	 * Example of how provide the variables:
 	 *
 	 * $nametag = [
@@ -79,15 +84,28 @@ final class Rank {
 	 * @param ChatFormat    $chat
 	 * @param string[]      $permissions
 	 */
-	public function __construct(string $name, array $nametag, array $chat, array $permissions = []) {
+	public function __construct(string $name, array $nametag, array $chat, array $permissions = [], RankType $type = RankType::GAME) {
 		$this->name = $name;
 		$this->nametag = $nametag;
 		$this->chat = $chat;
 		$this->permissions = $permissions;
+		$this->type = $type;
 	}
 
 	public function getName() : string {
 		return $this->name;
+	}
+
+	public function getType() : RankType {
+		return $this->type;
+	}
+
+	public function isModeration() : bool {
+		return $this->type->isModeration();
+	}
+
+	public function isGame() : bool {
+		return $this->type->isGame();
 	}
 
 	/**

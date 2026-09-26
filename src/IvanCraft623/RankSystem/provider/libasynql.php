@@ -48,6 +48,11 @@ use function json_encode;
 use function strtolower;
 use const JSON_THROW_ON_ERROR;
 
+/**
+ * Fork Foxy : provider clave par UUID (colonne uuid PRIMARY KEY).
+ * Le pseudo reste stocke pour l'affichage, la resolution hors ligne
+ * et le suivi des changements de gamertag.
+ */
 class libasynql extends Provider {
 	use SingletonTrait;
 
@@ -73,6 +78,10 @@ class libasynql extends Provider {
 		$this->name = strtolower($dbType);
 
 		$this->database->executeGeneric('table.users');
+		if ($this->name === 'sqlite') {
+			// MySQL cree l'index sur name directement dans la table
+			$this->database->executeGeneric('table.nameIndex');
+		}
 	}
 
 	public function unload() : void {
@@ -88,12 +97,25 @@ class libasynql extends Provider {
 	/**
 	 * @phpstan-return Promise<?UserData>
 	 */
-	public function getUserData(string $name) : Promise {
+	public function getUserData(string $uuid) : Promise {
+		return $this->selectUser("data.users.get", ["uuid" => $uuid]);
+	}
+
+	/**
+	 * @phpstan-return Promise<?UserData>
+	 */
+	public function getUserDataByName(string $name) : Promise {
+		return $this->selectUser("data.users.getByName", ["name" => $name]);
+	}
+
+	/**
+	 * @param array<string, string> $args
+	 * @phpstan-return Promise<?UserData>
+	 */
+	private function selectUser(string $query, array $args) : Promise {
 		/** @phpstan-var PromiseResolver<?UserData> $dataPromiseResolver */
 		$dataPromiseResolver = new PromiseResolver();
-		$this->database->executeSelect("data.users.get", [
-			"name" => $name
-		], function (array $rows) use ($dataPromiseResolver) {
+		$this->database->executeSelect($query, $args, function (array $rows) use ($dataPromiseResolver) {
 			if (isset($rows[0])) {
 				$dataPromiseResolver->resolve(UserData::jsonDeserialize($rows[0]));
 			} else {
@@ -109,10 +131,10 @@ class libasynql extends Provider {
 	/**
 	 * @phpstan-return Promise<bool>
 	 */
-	public function isInDb(string $name) : Promise {
+	public function isInDb(string $uuid) : Promise {
 		/** @phpstan-var PromiseResolver<bool> $promiseResolver */
 		$promiseResolver = new PromiseResolver();
-		$this->getUserData($name)->onCompletion(
+		$this->getUserData($uuid)->onCompletion(
 			function (?UserData $userData) use ($promiseResolver) {
 				$promiseResolver->resolve($userData !== null);
 			},
@@ -121,11 +143,36 @@ class libasynql extends Provider {
 		return $promiseResolver->getPromise();
 	}
 
+	public function claimUser(string $uuid, string $name, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
+		$this->database->executeGeneric("data.users.claim", [
+			"uuid" => $uuid,
+			"name" => $name
+		], $onSuccess, function (SqlError $result) use ($onError) {
+			$this->plugin->getLogger()->emergency($result->getQuery() . ' - ' . $result->getErrorMessage());
+			if ($onError !== null) {
+				$onError();
+			}
+		});
+	}
+
+	public function updateName(string $uuid, string $name, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
+		$this->database->executeGeneric("data.users.updateName", [
+			"uuid" => $uuid,
+			"name" => $name
+		], $onSuccess, function (SqlError $result) use ($onError) {
+			$this->plugin->getLogger()->emergency($result->getQuery() . ' - ' . $result->getErrorMessage());
+			if ($onError !== null) {
+				$onError();
+			}
+		});
+	}
+
 	/**
 	 * @param array<string, ?int> $ranks
 	 */
-	public function setRanks(string $name, array $ranks, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
+	public function setRanks(string $uuid, string $name, array $ranks, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
 		$this->database->executeGeneric("data.users.setRanks", [
+			"uuid" => $uuid,
 			"name" => $name,
 			"ranks" => json_encode($ranks, JSON_THROW_ON_ERROR)
 		], $onSuccess, function (SqlError $result) use ($onError) {
@@ -139,17 +186,17 @@ class libasynql extends Provider {
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	public function setRank(string $name, string $rank, ?int $expTime = null) : Promise {
+	public function setRank(string $uuid, string $name, string $rank, ?int $expTime = null) : Promise {
 		/** @phpstan-var PromiseResolver<array<string, ?int>> $resultPromise */
 		$resultPromise = new PromiseResolver();
-		$this->getUserData($name)->onCompletion(
-			function (?UserData $userData) use ($name, $rank, $expTime, $resultPromise) {
+		$this->getUserData($uuid)->onCompletion(
+			function (?UserData $userData) use ($uuid, $name, $rank, $expTime, $resultPromise) {
 				$ranks = [];
 				if ($userData !== null) {
 					$ranks = $userData->getRanks();
 				}
 				$ranks[$rank] = $expTime;
-				$this->setRanks($name, $ranks, function() use ($ranks, $resultPromise) {
+				$this->setRanks($uuid, $name, $ranks, function() use ($ranks, $resultPromise) {
 					$resultPromise->resolve($ranks);
 				}, fn() => $resultPromise->reject());
 			},
@@ -161,21 +208,21 @@ class libasynql extends Provider {
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	public function removeRank(string $name, string $rank) : Promise {
+	public function removeRank(string $uuid, string $rank) : Promise {
 		/** @phpstan-var PromiseResolver<array<string, ?int>> $resultPromise */
 		$resultPromise = new PromiseResolver();
-		$this->getUserData($name)->onCompletion(
-			function (?UserData $userData) use ($name, $rank, $resultPromise) {
+		$this->getUserData($uuid)->onCompletion(
+			function (?UserData $userData) use ($uuid, $rank, $resultPromise) {
 				$ranks = [];
 				if ($userData !== null) {
 					$ranks = $userData->getRanks();
 					unset($ranks[$rank]);
 					if (count($ranks) === 0 && count($userData->getPermissions()) === 0) {
-						$this->delete($name, function() use ($ranks, $resultPromise) {
+						$this->delete($uuid, function() use ($ranks, $resultPromise) {
 							$resultPromise->resolve($ranks);
 						}, fn() => $resultPromise->reject());
 					} else {
-						$this->setRanks($name, $ranks, function() use ($ranks, $resultPromise) {
+						$this->setRanks($uuid, $userData->getName(), $ranks, function() use ($ranks, $resultPromise) {
 							$resultPromise->resolve($ranks);
 						}, fn() => $resultPromise->reject());
 					}
@@ -191,8 +238,9 @@ class libasynql extends Provider {
 	/**
 	 * @param array<string, ?int> $permissions
 	 */
-	public function setPermissions(string $name, array $permissions, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
+	public function setPermissions(string $uuid, string $name, array $permissions, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
 		$this->database->executeGeneric("data.users.setPermissions", [
+			"uuid" => $uuid,
 			"name" => $name,
 			"permissions" => json_encode($permissions, JSON_THROW_ON_ERROR)
 		], $onSuccess, function (SqlError $result) use ($onError) {
@@ -206,17 +254,17 @@ class libasynql extends Provider {
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	public function setPermission(string $name, string $permission, ?int $expTime = null) : Promise {
+	public function setPermission(string $uuid, string $name, string $permission, ?int $expTime = null) : Promise {
 		/** @phpstan-var PromiseResolver<array<string, ?int>> $resultPromise */
 		$resultPromise = new PromiseResolver();
-		$this->getUserData($name)->onCompletion(
-			function (?UserData $userData) use ($name, $permission, $expTime, $resultPromise) {
+		$this->getUserData($uuid)->onCompletion(
+			function (?UserData $userData) use ($uuid, $name, $permission, $expTime, $resultPromise) {
 				$permissions = [];
 				if ($userData !== null) {
 					$permissions = $userData->getPermissions();
 				}
 				$permissions[$permission] = $expTime;
-				$this->setPermissions($name, $permissions, function() use ($permissions, $resultPromise) {
+				$this->setPermissions($uuid, $name, $permissions, function() use ($permissions, $resultPromise) {
 					$resultPromise->resolve($permissions);
 				}, fn() => $resultPromise->reject());
 			},
@@ -228,21 +276,21 @@ class libasynql extends Provider {
 	/**
 	 * @phpstan-return Promise<array<string, ?int>>
 	 */
-	public function removePermission(string $name, string $permission) : Promise {
+	public function removePermission(string $uuid, string $permission) : Promise {
 		/** @phpstan-var PromiseResolver<array<string, ?int>> $resultPromise */
 		$resultPromise = new PromiseResolver();
-		$this->getUserData($name)->onCompletion(
-			function (?UserData $userData) use ($name, $permission, $resultPromise) {
+		$this->getUserData($uuid)->onCompletion(
+			function (?UserData $userData) use ($uuid, $permission, $resultPromise) {
 				$permissions = [];
 				if ($userData !== null) {
 					$permissions = $userData->getPermissions();
 					unset($permissions[$permission]);
 					if (count($permissions) === 0 && count($userData->getRanks()) === 0) {
-						$this->delete($name, function() use ($permissions, $resultPromise) {
+						$this->delete($uuid, function() use ($permissions, $resultPromise) {
 							$resultPromise->resolve($permissions);
 						}, fn() => $resultPromise->reject());
 					} else {
-						$this->setPermissions($name, $permissions, function() use ($permissions, $resultPromise) {
+						$this->setPermissions($uuid, $userData->getName(), $permissions, function() use ($permissions, $resultPromise) {
 							$resultPromise->resolve($permissions);
 						}, fn() => $resultPromise->reject());
 					}
@@ -255,9 +303,9 @@ class libasynql extends Provider {
 		return $resultPromise->getPromise();
 	}
 
-	public function delete(string $name, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
+	public function delete(string $uuid, ?Closure $onSuccess = null, ?Closure $onError = null) : void {
 		$this->database->executeGeneric('data.users.delete', [
-			"name" => $name
+			"uuid" => $uuid
 		], $onSuccess, function (SqlError $result) use ($onError) {
 			$this->plugin->getLogger()->emergency($result->getQuery() . ' - ' . $result->getErrorMessage());
 			if ($onError !== null) {

@@ -1,0 +1,110 @@
+---
+#Welcome to RankSystem config! :D
+#This plugin was made by IvanCraft623
+
+#Do not edit this value!
+#Only for internal use.
+config-version: 2
+
+#Notifying the user when his rank has expired
+rank-expire-notification: true
+
+#Automatically migrate other plugins data
+auto-migrator: true
+
+#Provider where player information is stored
+#Fork Foxy : MySQL partage entre tous les serveurs (lobby, game, ...)
+database:
+  # The database type. "sqlite" and "mysql" are supported.
+  type: mysql
+
+  # Edit these settings only if you choose "sqlite".
+  sqlite:
+    # The file name of the database in the plugin data folder.
+    # You can also put an absolute path here.
+    file: database/RankSystem.db
+  # Edit these settings only if you choose "mysql".
+  mysql:
+    # host.docker.internal = l hote depuis le conteneur PMMP
+    # (fourni par WebAPI via ExtraHosts host-gateway ; sur Linux docker >= 20.10)
+    host: host.docker.internal
+    port: 3306
+    # Eviter root en production : creer un utilisateur dedie au schema ranksystem
+    username: root
+    password: ""
+    schema: Foxy
+  # The maximum number of simultaneous SQL queries
+  # Recommended: 1 for sqlite, 2 for MySQL. You may want to further increase this value if your MySQL connection is very slow.
+  worker-limit: 2
+
+#Players will have this rank by default
+#Fork Foxy : le rank par defaut doit etre un grade de jeu (type: game)
+Default_Rank: Player
+
+#All players will have these permissions
+Global_Perms:
+  - example.perm
+
+#Ranks hierarchy
+#It is advisable to put all the ranks, otherwise the non-established ranks will be ordered in the lowest position
+#Fork Foxy : d'abord les ranks de moderation (du plus haut au plus bas),
+#puis les grades de jeu (du plus haut au plus bas)
+Hierarchy:
+  - Owner #Highest rank
+  - Admin
+  - LeadMod
+  - Mod
+  - Helper
+  - Dev
+  - Teams
+  - Friend
+  - Supreme
+  - Prestige
+  - Royal
+  - Premium
+  - Booster
+  - Partner
+  - Media
+  - Voter
+  - Player #Lower rank
+
+#Tags:
+# Tags can be used both in nametag and chat. (These are not related to ScoreHud)
+# Defaults are:
+# {name} - The user's name
+# {display_name} - The player's display name
+# {nametag_ranks_prefix} - Set of all rank prefixes in nametag
+# {nametag_highest-rank_prefix} - Highest rank prefix in nametag
+# {nametag_name-color} - The color of the name in nametag
+# {chat_ranks_prefix} - Set of all rank prefixes in chat
+# {chat_highest-rank_prefix} - Highest rank prefix in chat
+# {chat_name-color} - The color of the name in chat
+# {chat_format} - Stuff that goes before the message (Can be a colon)
+#
+# Fork Foxy (affichage en 2 parties : [moderation] [grade de jeu]) :
+# {nametag_moderation_prefix} - Prefixe du rank de moderation (vide si aucun)
+# {nametag_game_prefix} - Prefixe du grade de jeu le plus haut
+# {nametag_moderation_name-color} - Couleur de nom du rank de moderation (vide si aucun)
+# {nametag_game_name-color} - Couleur de nom du grade de jeu le plus haut
+# {chat_moderation_prefix} - Prefixe du rank de moderation dans le chat (vide si aucun)
+# {chat_game_prefix} - Prefixe du grade de jeu le plus haut dans le chat
+# {chat_moderation_name-color} - Couleur de nom du rank de moderation dans le chat
+# {chat_game_name-color} - Couleur de nom du grade de jeu le plus haut dans le chat
+
+#Other plugins can register custom tags
+
+#Configure users's nametag
+#Fork Foxy : affichage gere par le plugin Lobby (RankDisplayListener),
+#laisser enabled: false pour eviter un double nametag.
+#Le format ci-dessous reste utilisable si vous reactivez l'affichage natif.
+nametag:
+  enabled: false
+  format: "{nametag_moderation_prefix}{nametag_game_prefix}{nametag_name-color}{name}"
+
+#Configure users's chat
+#Fork Foxy : affichage gere par le plugin Lobby (RankDisplayListener),
+#laisser enabled: false pour eviter un double formatage du chat.
+chat:
+  enabled: false
+  format: "{chat_moderation_prefix}{chat_game_prefix}{chat_name-color}{name}{chat_format}{message}"
+...

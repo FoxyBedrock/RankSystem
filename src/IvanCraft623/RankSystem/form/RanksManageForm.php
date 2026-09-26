@@ -29,11 +29,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\RankSystem\form;
 
-use IvanCraft623\languages\Translator;
-
 use IvanCraft623\RankSystem\rank\Rank;
 use IvanCraft623\RankSystem\rank\RankManager;
-use IvanCraft623\RankSystem\RankSystem;
 use IvanCraft623\RankSystem\utils\Utils;
 use jojoe77777\FormAPI\SimpleForm;
 
@@ -41,10 +38,7 @@ use pocketmine\player\Player;
 
 final class RanksManageForm {
 
-	private Translator $translator;
-
 	public function __construct() {
-		$this->translator = RankSystem::getInstance()->getTranslator();
 	}
 
 	public function send(Player $player) : void {
@@ -56,15 +50,13 @@ final class RanksManageForm {
 				case 0:
 					FormManager::getInstance()->sendInsertText(
 						$player,
-						$this->translator->translate($player, "form.ranks_manage.title"),
-						$this->translator->translate($player, "form.ranks_manage.create"),
-						$this->translator->translate($player, "text.rank") . ":"
+						"Ranks Manager",
+						"§7Create a new rank.",
+						"Rank:"
 					)->onCompletion(
 						function (string $rank) use ($player) {
 							if (RankManager::getInstance()->exists($rank)) {
-								$player->sendMessage($this->translator->translate($player, "rank.already_exists", [
-									"{%rank}" => $rank
-								]));
+								$player->sendMessage("§c" . $rank . " rank already exist!");
 							} else {
 								FormManager::getInstance()->sendRankEditor(
 									$player,
@@ -78,7 +70,7 @@ final class RanksManageForm {
 					break;
 
 				case 1:
-					FormManager::getInstance()->sendSelectRank($player, $this->translator->translate($player, "form.ranks_manage.title"))->onCompletion(
+					FormManager::getInstance()->sendSelectRank($player, "Ranks Manager")->onCompletion(
 						function (Rank $rank) use ($player) {
 							FormManager::getInstance()->sendRankEditor(
 								$player,
@@ -93,21 +85,17 @@ final class RanksManageForm {
 					break;
 
 				case 2:
-					FormManager::getInstance()->sendSelectRank($player, $this->translator->translate($player, "form.ranks_manage.title"))->onCompletion(
+					FormManager::getInstance()->sendSelectRank($player, "Ranks Manager")->onCompletion(
 						function (Rank $rank) use ($player) {
 							FormManager::getInstance()->sendConfirmation(
 								$player,
-								$this->translator->translate($player, "form.ranks_manage.title"),
-								$this->translator->translate($player, "form.ranks_manage.delete.confirm", [
-									"{%rank}" => $rank->getName()
-								])
+								"Ranks Manager",
+								"Are you sure you want to §cdelete §rthe §b" . $rank->getName() . " §rrank, this change is irreversible!"
 							)->onCompletion(
 								function (bool $result) use ($player, $rank) {
 									if ($result) {
 										RankManager::getInstance()->delete($rank);
-										$player->sendMessage($this->translator->translate($player, "rank.delete.success", [
-											"{%rank}" => $rank->getName()
-										]));
+										$player->sendMessage("§eYou have successfully deleted the §c" . $rank->getName() . " §erank");
 									}
 								}, function () {} // No response
 							);
@@ -116,7 +104,7 @@ final class RanksManageForm {
 					break;
 
 				case 3:
-					FormManager::getInstance()->sendSelectRank($player, $this->translator->translate($player, "form.ranks_manage.title"))->onCompletion(
+					FormManager::getInstance()->sendSelectRank($player, "Ranks Manager")->onCompletion(
 						function (Rank $rank) use ($player) {
 							FormManager::getInstance()->sendRankInfo($player, $rank);
 						}, function () {} // No response
@@ -128,13 +116,13 @@ final class RanksManageForm {
 					break;
 			}
 		});
-		$form->setTitle($this->translator->translate($player, "form.ranks_manage.title"));
-		$form->setContent($this->translator->translate($player, "form.select_category"));
-		$form->addButton($this->translator->translate($player, "text.create"), SimpleForm::IMAGE_TYPE_PATH, "textures/ui/anvil-plus");
-		$form->addButton($this->translator->translate($player, "text.edit"), SimpleForm::IMAGE_TYPE_PATH, "textures/gui/newgui/Bundle/PaintBrush");
-		$form->addButton($this->translator->translate($player, "text.delete"), SimpleForm::IMAGE_TYPE_PATH, "textures/ui/icon_trash");
-		$form->addButton($this->translator->translate($player, "text.information"), SimpleForm::IMAGE_TYPE_PATH, "textures/items/map_filled");
-		$form->addButton($this->translator->translate($player, "text.exit"), SimpleForm::IMAGE_TYPE_PATH, "textures/blocks/barrier");
+		$form->setTitle("Ranks Manager");
+		$form->setContent("Select a category");
+		$form->addButton("Create", SimpleForm::IMAGE_TYPE_PATH, "textures/ui/anvil-plus");
+		$form->addButton("Edit", SimpleForm::IMAGE_TYPE_PATH, "textures/gui/newgui/Bundle/PaintBrush");
+		$form->addButton("Delete", SimpleForm::IMAGE_TYPE_PATH, "textures/ui/icon_trash");
+		$form->addButton("Information", SimpleForm::IMAGE_TYPE_PATH, "textures/items/map_filled");
+		$form->addButton("Exit", SimpleForm::IMAGE_TYPE_PATH, "textures/blocks/barrier");
 		$form->sendToPlayer($player);
 	}
 }

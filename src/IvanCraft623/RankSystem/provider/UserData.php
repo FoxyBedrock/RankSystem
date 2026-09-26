@@ -39,15 +39,23 @@ use function time;
 class UserData implements JsonSerializable {
 
 	/**
+	 * Fork Foxy : identifiant base sur l'UUID du joueur (le pseudo n'est
+	 * conserve que pour l'affichage et la resolution hors ligne).
+	 *
 	 * @param array<string, ?int> $ranks
 	 * @param array<string, ?int> $permissions
 	 */
 	public function __construct(
+		protected string $uuid,
 		protected string $name,
 		protected array $ranks,
 		protected array $permissions,
 		protected int $generationTime //Time at which the data was obtained
 	) {
+	}
+
+	public function getUuid() : string {
+		return $this->uuid;
 	}
 
 	public function getName() : string {
@@ -79,6 +87,7 @@ class UserData implements JsonSerializable {
 	 */
 	public function jsonSerialize() : array {
 		return [
+			"uuid" => $this->uuid,
 			"name" => $this->name,
 			"ranks" => $this->ranks,
 			"permissions" => $this->permissions,
@@ -90,6 +99,7 @@ class UserData implements JsonSerializable {
 	 * Returns a UserData from properties created in an array by {@link UserData#jsonSerialize}
 	 * @param mixed[] $data
 	 * @phpstan-param array{
+	 * 	uuid: string,
 	 * 	name: string,
 	 * 	ranks: ?string,
 	 * 	permissions: ?string,
@@ -114,6 +124,7 @@ class UserData implements JsonSerializable {
 		PMUtils::validateArrayValueType($permissions, $intOrNullValidator);
 
 		return new UserData(
+			(string) ($data["uuid"] ?? ""),
 			(string) $data["name"],
 			$ranks,
 			$permissions,

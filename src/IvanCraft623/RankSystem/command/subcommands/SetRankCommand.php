@@ -59,30 +59,22 @@ final class SetRankCommand extends BaseSubCommand {
 	 * @param mixed[] $args
 	 */
 	public function onRun(CommandSender $sender, string $aliasUsed, array $args) : void {
-		$translator = $this->plugin->getTranslator();
 		if (array_key_exists("time", $args) && $args["time"] === "null") {
 			$sender->sendMessage(
-				$translator->translate($sender, "time.invalid") . "\n" .
-				$translator->translate($sender, "time.arguments") . "\n" .
-				$translator->translate($sender, "time.example")
+				"§cInvalid time provided!" . "\n" .
+				"§aDuration arguments: y = year, M = month, w = week, d = day, h = hour, m = minute" . "\n" .
+				"§eFor instance, 1y3M means one year and three months (this is the same as 15M). 1w2d12h means one week, two days, and twelve hours (this is the same as 9d12h)."
 			);
 		} else {
 			$session = $this->plugin->getSessionManager()->get($args["user"]);
-			$session->onInitialize(function () use ($session, $sender, $args, $translator) {
+			$session->onInitialize(function () use ($session, $sender, $args) {
 				if ($session->hasRank($args["rank"])) {
-					$sender->sendMessage($translator->translate($sender, "user.set_rank.already_has", [
-						"{%user}" => $session->getName(),
-						"{%rank}" => $args["rank"]->getName()
-					]));
+					$sender->sendMessage("§c" . $session->getName() . " already has the " . $args["rank"]->getName() . " rank!");
 				} else {
 					$time = isset($args["time"]) ? ((int) ($args["time"])) : null;
 
 					$session->setRank($args["rank"], $time);
-					$sender->sendMessage($translator->translate($sender, "user.set_rank.success", [
-						"{%user}" => $session->getName(),
-						"{%rank}" => $args["rank"]->getName(),
-						"{%time}" => (isset($args["time"]) ? Utils::getTimeTranslated($time - time(), $translator, $sender) : $translator->translate($sender, "text.never"))
-					]));
+					$sender->sendMessage("§a" . $args["rank"]->getName() . " §brank has been set to §e" . $session->getName() . " §bfor §a" . (isset($args["time"]) ? Utils::getTimeTranslated($time - time()) : "Never"));
 				}
 			});
 		}

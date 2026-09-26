@@ -38,10 +38,12 @@ use IvanCraft623\RankSystem\provider\UserData;
 use IvanCraft623\RankSystem\rank\Rank;
 use IvanCraft623\RankSystem\RankSystem;
 
+use pocketmine\permission\PermissionManager;
 use pocketmine\player\Player;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\utils\AssumptionFailedError;
+use pocketmine\utils\UUID;
 
 use function array_filter;
 use function array_key_exists;
@@ -54,11 +56,19 @@ use function in_array;
 use function is_string;
 use function spl_object_id;
 use function str_replace;
+use function strtolower;
 
 abstract class Session {
 	protected RankSystem $plugin;
 
 	protected string $name;
+
+	/**
+	 * Fork Foxy : identifiant unique du joueur, utilise comme cle en base.
+	 * Vide a la construction d'une session hors ligne : il est resolu
+	 * au chargement des donnees (ou genere de facon deterministe).
+	 */
+	protected string $uuid;
 
 	protected bool $initialized = false;
 
@@ -79,9 +89,10 @@ abstract class Session {
 
 	protected bool $synchronized = false;
 
-	public function __construct(string $name) {
+	public function __construct(string $name, string $uuid = "") {
 		$this->plugin = RankSystem::getInstance();
 		$this->name = $name;
+		$this->uuid = $uuid;
 
 		$this->loadUserData();
 	}
@@ -101,28 +112,75 @@ abstract class Session {
 		}
 	}
 
-	private function loadUserData() : void {
-		$this->plugin->getProvider()->getUserData($this->name)->onCompletion(
+	protected function loadUserData() : void {
+		$provider = $this->plugin->getProvider();
+		if ($this->uuid !== "") {
+			# Session en ligne : chargement par UUID
+			$provider->getUserData($this->uuid)->onCompletion(
+				function (?UserData $userData) use ($provider) {
+					if ($userData !== null) {
+						# Le gamertag Xbox a pu changer : on garde le pseudo a jour
+						if ($userData->getName() !== $this->name) {
+							$provider->updateName($this->uuid, $this->name);
+						}
+						$this->onUserDataLoaded($userData);
+						return;
+					}
+					# Aucune ligne pour cet UUID : une ligne a pu etre creee
+					# hors ligne a partir du pseudo (UUID placeholder) -> claim
+					$provider->getUserDataByName($this->name)->onCompletion(
+						function (?UserData $byNameData) use ($provider) {
+							if ($byNameData !== null) {
+								$provider->claimUser($this->uuid, $this->name);
+							}
+							$this->onUserDataLoaded($byNameData);
+						},
+						fn() => throw new \Error("Failed to load " . $this->name . "' session")
+					);
+				},
+				fn() => throw new \Error("Failed to load " . $this->name . "' session")
+			);
+			return;
+		}
+
+		# Session hors ligne : resolution de l'UUID par le pseudo
+		$provider->getUserDataByName($this->name)->onCompletion(
 			function (?UserData $userData) {
-				$permissions = [];
 				if ($userData !== null) {
-					# Ranks
-					$this->syncRanks($userData->getRanks());
-
-					# Permissions
-					$permissions = $userData->getPermissions();
+					$this->uuid = $userData->getUuid();
+				} else {
+					# Joueur jamais vu : UUID placeholder deterministe,
+					# remplace par le vrai UUID au premier join (claim)
+					$this->uuid = UUID::fromData($this->name)->toString();
 				}
-				$this->syncPermissions($permissions);
-				$this->updateRanks();
-
-				$this->initialized = true;
-				$this->synchronized = true;
-				foreach ($this->onInits as $onInit) {
-					$onInit();
-				}
-				$this->onInits = [];
-			}, fn() => throw new \Error("Failed to load " . $this->name . "' session")
+				$this->onUserDataLoaded($userData);
+			},
+			fn() => throw new \Error("Failed to load " . $this->name . "' session")
 		);
+	}
+
+	/**
+	 * Point commun des chargements en ligne / hors ligne :
+	 * applique les donnees et debloque la file de synchronisation.
+	 */
+	private function onUserDataLoaded(?UserData $userData) : void {
+		$permissions = [];
+		if ($userData !== null) {
+			# Ranks
+			$this->syncRanks($userData->getRanks());
+
+			# Permissions
+			$permissions = $userData->getPermissions();
+		}
+		$this->syncPermissions($permissions);
+		$this->updateRanks();
+
+		$this->initialized = true;
+		$this->synchronized = true;
+		foreach ($this->onInits as $onInit) {
+			$onInit();
+		}
+		$this->onInits = [];
 	}
 
 	/**
@@ -160,10 +218,26 @@ abstract class Session {
 			$this->permissions = array_merge($this->permissions, $rank->getPermissions());
 		}
 		$this->permissions = array_merge($this->permissions, array_keys($userPermissions));
+
+		# Fork Foxy : le noeud "*" donne toutes les permissions enregistrees
+		# sur le serveur (rank Owner equivalent a un op).
+		if (in_array("*", $this->permissions, true)) {
+			$this->permissions = array_merge(
+				array_keys(PermissionManager::getInstance()->getPermissions()),
+				array_keys($userPermissions)
+			);
+		}
 	}
 
 	public function getName() : string {
 		return $this->name;
+	}
+
+	/**
+	 * Fork Foxy : UUID utilise comme cle en base de donnees.
+	 */
+	public function getUuid() : string {
+		return $this->uuid;
 	}
 
 	abstract public function getPlayer() : ?Player;
@@ -208,6 +282,49 @@ abstract class Session {
 	public function getHighestRank() : Rank {
 		$ranks = $this->getRanks();
 		return $ranks[array_key_first($ranks)];
+	}
+
+	/**
+	 * Fork Foxy : le rank de moderation du joueur (il n'en a qu'un seul).
+	 * getRanks() etant deja trie hierarchiquement, le premier trouve est le bon.
+	 */
+	public function getModerationRank() : ?Rank {
+		foreach ($this->getRanks() as $rank) {
+			if ($rank->isModeration()) {
+				return $rank;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Fork Foxy : le grade de jeu le plus haut du joueur.
+	 * Retourne le rank par defaut si le joueur n'a aucun grade de jeu.
+	 */
+	public function getHighestGameRank() : Rank {
+		foreach ($this->getRanks() as $rank) {
+			if ($rank->isGame()) {
+				return $rank;
+			}
+		}
+		return $this->plugin->getRankManager()->getDefault();
+	}
+
+	/**
+	 * Fork Foxy : grade de jeu a afficher.
+	 * Retourne null si le joueur a un rank de moderation et que son plus
+	 * haut grade de jeu est le rank par defaut : on n'affiche pas "Player"
+	 * derriere un prefixe staff.
+	 */
+	public function getDisplayGameRank() : ?Rank {
+		$game = $this->getHighestGameRank();
+		if ($this->getModerationRank() !== null) {
+			$default = $this->plugin->getRankManager()->getDefault();
+			if (strtolower($game->getName()) === strtolower($default->getName())) {
+				return null;
+			}
+		}
+		return $game;
 	}
 
 	/**
@@ -289,10 +406,19 @@ abstract class Session {
 			return false;
 		}
 
+		# Fork Foxy : un seul rank de moderation a la fois.
+		# On retire l'ancien avant d'appliquer le nouveau (file de sync sequentielle).
+		if ($rank->isModeration()) {
+			$current = $this->getModerationRank();
+			if ($current !== null && $current !== $rank) {
+				$this->removeRank($current);
+			}
+		}
+
 		$this->addToSyncQueue(function () use ($rank, $expTime) : Promise {
 			/** @var PromiseResolver<bool> $resolver */
 			$resolver = new PromiseResolver();
-			$this->plugin->getProvider()->setRank($this->name, $rank->getName(), $expTime)->onCompletion(
+			$this->plugin->getProvider()->setRank($this->uuid, $this->name, $rank->getName(), $expTime)->onCompletion(
 				function (array $ranks) use ($resolver) {
 					$this->syncRanks($ranks);
 					$this->syncPermissions($this->userPermissions);
@@ -327,7 +453,7 @@ abstract class Session {
 		$this->addToSyncQueue(function () use ($rank) : Promise {
 			/** @var PromiseResolver<bool> $resolver */
 			$resolver = new PromiseResolver();
-			$this->plugin->getProvider()->removeRank($this->name, $rank->getName())->onCompletion(
+			$this->plugin->getProvider()->removeRank($this->uuid, $rank->getName())->onCompletion(
 				function (array $ranks) use ($resolver) {
 					$this->syncRanks($ranks);
 					$this->syncPermissions($this->userPermissions);
@@ -387,7 +513,7 @@ abstract class Session {
 		$this->addToSyncQueue(function () use ($perm, $expTime) : Promise {
 			/** @var PromiseResolver<bool> $resolver */
 			$resolver = new PromiseResolver();
-			$this->plugin->getProvider()->setPermission($this->name, $perm, $expTime)->onCompletion(
+			$this->plugin->getProvider()->setPermission($this->uuid, $this->name, $perm, $expTime)->onCompletion(
 				function (array $permissions) use ($resolver) {
 					$this->syncPermissions($permissions);
 					$this->updateRanks();
@@ -415,7 +541,7 @@ abstract class Session {
 		$this->addToSyncQueue(function () use ($perm) : Promise {
 			/** @var PromiseResolver<bool> $resolver */
 			$resolver = new PromiseResolver();
-			$this->plugin->getProvider()->removePermission($this->name, $perm)->onCompletion(
+			$this->plugin->getProvider()->removePermission($this->uuid, $perm)->onCompletion(
 				function (array $permissions) use ($resolver) {
 					$this->syncPermissions($permissions);
 					$this->updateRanks();

@@ -67,18 +67,11 @@ final class RemovePermissionCommand extends BaseSubCommand {
 
 		$session = $this->plugin->getSessionManager()->get($user);
 		$session->onInitialize(function () use ($session, $sender, $user, $permission) {
-			$translator = $this->plugin->getTranslator();
 			if (!$session->hasUserPermission($permission)) {
-				$sender->sendMessage($translator->translate($sender, "user.remove_permission.no_permission", [
-					"{%user}" => $user,
-					"{%permission}" => $permission
-				]));
+				$sender->sendMessage("§c" . $user . " does not has the " . $permission . " permission!");
 			} else {
 				$session->removePermission($permission);
-				$sender->sendMessage($translator->translate($sender, "user.remove_permission.success", [
-					"{%user}" => $user,
-					"{%permission}" => $permission
-				]));
+				$sender->sendMessage("§bYou have successfully §cremoved§b the §e" . $permission . " §bpermission from §a" . $user);
 			}
 		});
 	}

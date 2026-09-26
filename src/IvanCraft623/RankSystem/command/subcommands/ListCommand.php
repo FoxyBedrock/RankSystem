@@ -52,7 +52,7 @@ final class ListCommand extends BaseSubCommand {
 	 */
 	public function onRun(CommandSender $sender, string $aliasUsed, array $args) : void {
 		$ranks = $this->plugin->getRankManager()->getAll();
-		$sender->sendMessage("§a" . $this->plugin->getTranslator()->translate($sender, "text.ranks") . " (" . count($ranks) . "):");
+		$sender->sendMessage("§aRanks (" . count($ranks) . "):");
 		foreach ($ranks as $rank) {
 			$sender->sendMessage("§f» §e" . $rank->getName());
 		}

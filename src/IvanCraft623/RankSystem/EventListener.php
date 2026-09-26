@@ -74,9 +74,7 @@ class EventListener implements Listener {
 		$session = $event->getSession();
 		$player = $session->getPlayer();
 		if ($player !== null && $player->isOnline()) {
-			$player->sendMessage($this->plugin->getTranslator()->translate($player, "user.rank.expire", [
-				"{%rank}" => $event->getRank()->getName()
-			]));
+			$player->sendMessage("§eYour §b" . $event->getRank()->getName() . " §erank has expired!");
 		}
 	}
 }

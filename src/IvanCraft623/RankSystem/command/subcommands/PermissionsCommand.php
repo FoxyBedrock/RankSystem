@@ -68,12 +68,12 @@ final class PermissionsCommand extends BaseSubCommand {
 		}
 		$plugin = (strtolower($source) === 'pocketmine' || strtolower($source) === 'pmmp') ? 'pocketmine' : $this->plugin->getServer()->getPluginManager()->getPlugin($source);
 		if ($plugin === null) {
-			$sender->sendMessage($this->plugin->getTranslator()->translate($sender, "command.permissions.plugin_not_found"));
+			$sender->sendMessage("§cPlugin " . $source . " NOT found!");
 			return;
 		}
 		$permissions = ($plugin instanceof PluginBase) ? $this->plugin->getPluginPerms($plugin) : $this->plugin->getPmmpPerms();
 		if (count($permissions) === 0) {
-			$sender->sendMessage($this->plugin->getTranslator()->translate($sender, "command.permissions.no_permissions"));
+			$sender->sendMessage("§e" . $source . " doesn't have any permissions!");
 			return;
 		}
 		$pageHeight = $sender instanceof Player ? 6 : 48;
@@ -86,11 +86,7 @@ final class PermissionsCommand extends BaseSubCommand {
 		} else {
 			$pageNumber = $args["page"];
 		}
-			$sender->sendMessage($this->plugin->getTranslator()->translate($sender, "command.permissions.list", [
-				"{%source}" => $source,
-				"{%page}" => $pageNumber,
-				"{%total_pages}" => $maxPageNumber
-			]));
+			$sender->sendMessage("§bList of all permissions from §e" . $source . " §f(§2" . $pageNumber . " §7/ §2" . $maxPageNumber . "§f)§b:");
 		foreach ($chunkedPermissions[$pageNumber - 1] as $permission) {
 			$sender->sendMessage(" §f- §a" . $permission->getName());
 		}

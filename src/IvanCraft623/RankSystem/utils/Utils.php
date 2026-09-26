@@ -34,11 +34,8 @@ use Ifera\ScoreHud\scoreboard\ScoreTag;
 
 use InvalidArgumentException;
 
-use IvanCraft623\languages\Translator;
 use IvanCraft623\RankSystem\rank\Rank;
 use IvanCraft623\RankSystem\session\Session;
-
-use pocketmine\command\CommandSender;
 
 use function ceil;
 use function class_exists;
@@ -93,15 +90,11 @@ final class Utils {
 		];
 	}
 
-	public static function getTimeTranslated(int $seconds, ?Translator $translator = null, ?CommandSender $sender = null) : string {
+	public static function getTimeTranslated(int $seconds) : string {
 		$time = [];
 		foreach (self::getTime($seconds) as $key => $value) {
 			if ($value !== 0 || $key === "seconds") {
-				if ($translator !== null) {
-					$time[] = $value . " " . $translator->translate($sender, "text.time." . $key);
-				} else {
-					$time[] = $value . " " . $key;
-				}
+				$time[] = $value . " " . $key;
 			}
 		}
 		return implode(", ", $time);
@@ -112,15 +105,8 @@ final class Utils {
 	 * @return ?Int UNIX timestamp corresponding to the duration (1y will return the timestamp one year from now)
 	 * Credits for adeynes
 	 */
-	public static function parseDuration(string $duration, ?Translator $translator = null, ?CommandSender $sender = null) : ?int {
+	public static function parseDuration(string $duration) : ?int {
 		$time_units = ['y' => 'year', 'M' => 'month', 'w' => 'week', 'd' => 'day', 'h' => 'hour', 'm' => 'minute'];
-		if ($translator !== null) {
-			$new_units = [];
-			foreach ($time_units as $key => $unit) {
-				$new_units[$translator->translate($sender, "time.argument." . $unit)] = $unit;
-			}
-			$time_units = $new_units;
-		}
 		$regex = "/^";
 		foreach ($time_units as $key => $unit) {
 			$regex .= "([0-9]+" . $key . ")?";

@@ -46,7 +46,8 @@ final class OnlineSession extends Session {
 	private SessionChatFormatter $chatFormatter;
 
 	public function __construct(Player $player) {
-		parent::__construct($player->getName());
+		# Fork Foxy : la session en ligne connait immediatement son UUID reel
+		parent::__construct($player->getName(), $player->getUniqueId()->toString());
 		$this->playerRef = WeakReference::create($player);
 		$this->chatFormatter = new SessionChatFormatter($this);
 		$this->attachment = $player->addAttachment($this->plugin);

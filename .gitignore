@@ -4,3 +4,9 @@ vendor/*
 # php-cs-fixer
 /.php_cs.cache
 /.php-cs-fixer.cache
+
+# Config locale non versionnee : copier resources/config.yml.example
+# vers resources/config.yml et resources/ranks.yml.example vers
+# resources/ranks.yml, puis ajuster (secrets MySQL, ranks).
+resources/config.yml
+resources/ranks.yml

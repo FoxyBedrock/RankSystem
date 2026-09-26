@@ -60,10 +60,10 @@ final class DeleteCommand extends BaseSubCommand {
 		}
 
 		if ($rank === $this->plugin->getRankManager()->getDefault()) {
-			$sender->sendMessage($this->plugin->getTranslator()->translate($sender, "rank.delete.default"));
+			$sender->sendMessage("§cYou cannot delete the default rank!");
 		} else {
 			$this->plugin->getRankManager()->delete($rank);
-			$sender->sendMessage($this->plugin->getTranslator()->translate($sender, "rank.delete.success"));
+			$sender->sendMessage("§eYou have successfully deleted the §c" . $rank->getName() . " §erank");
 		}
 	}
 

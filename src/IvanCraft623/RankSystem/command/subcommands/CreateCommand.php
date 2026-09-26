@@ -65,9 +65,7 @@ final class CreateCommand extends BaseSubCommand {
 		}
 
 		if ($this->plugin->getRankManager()->exists($rankName)) {
-			$sender->sendMessage($this->plugin->getTranslator()->translate($sender, "rank.already_exists", [
-				"{%rank}" => $rankName
-			]));
+			$sender->sendMessage("§c" . $rankName . " rank already exist!");
 		} else {
 			$this->plugin->getFormManager()->sendRankEditor(
 				$sender,

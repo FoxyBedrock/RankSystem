@@ -88,5 +88,46 @@ final class TagManager {
 		$this->registerTag(new Tag("chat_format", static function(Session $user) : string {
 			return $user->getHighestRank()->getChatFormat()["chatFormat"];
 		}));
+
+		# Fork Foxy : tags d'affichage separes moderation / grade de jeu.
+		# Le rank de moderation ne s'affiche que si le joueur en a un,
+		# le grade de jeu affiche le plus haut possede (masque si c'est le
+		# rank par defaut et que le joueur a un rank de moderation).
+		$this->registerTag(new Tag("nametag_moderation_prefix", static function(Session $user) : string {
+			$rank = $user->getModerationRank();
+			return $rank === null ? "" : $rank->getNameTagFormat()["prefix"];
+		}));
+		$this->registerTag(new Tag("nametag_game_prefix", static function(Session $user) : string {
+			# Fork Foxy : null si staff sans grade reel (rank par defaut masque).
+			$rank = $user->getDisplayGameRank();
+			return $rank === null ? "" : $rank->getNameTagFormat()["prefix"];
+		}));
+		$this->registerTag(new Tag("nametag_moderation_name-color", static function(Session $user) : string {
+			$rank = $user->getModerationRank();
+			return $rank === null ? "" : $rank->getNameTagFormat()["nameColor"];
+		}));
+		$this->registerTag(new Tag("nametag_game_name-color", static function(Session $user) : string {
+			# Fork Foxy : null si staff sans grade reel (rank par defaut masque).
+			$rank = $user->getDisplayGameRank();
+			return $rank === null ? "" : $rank->getNameTagFormat()["nameColor"];
+		}));
+		$this->registerTag(new Tag("chat_moderation_prefix", static function(Session $user) : string {
+			$rank = $user->getModerationRank();
+			return $rank === null ? "" : $rank->getChatFormat()["prefix"];
+		}));
+		$this->registerTag(new Tag("chat_game_prefix", static function(Session $user) : string {
+			# Fork Foxy : null si staff sans grade reel (rank par defaut masque).
+			$rank = $user->getDisplayGameRank();
+			return $rank === null ? "" : $rank->getChatFormat()["prefix"];
+		}));
+		$this->registerTag(new Tag("chat_moderation_name-color", static function(Session $user) : string {
+			$rank = $user->getModerationRank();
+			return $rank === null ? "" : $rank->getChatFormat()["nameColor"];
+		}));
+		$this->registerTag(new Tag("chat_game_name-color", static function(Session $user) : string {
+			# Fork Foxy : null si staff sans grade reel (rank par defaut masque).
+			$rank = $user->getDisplayGameRank();
+			return $rank === null ? "" : $rank->getChatFormat()["nameColor"];
+		}));
 	}
 }

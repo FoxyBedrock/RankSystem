@@ -29,8 +29,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\RankSystem\form;
 
-use IvanCraft623\RankSystem\RankSystem;
-
 use jojoe77777\FormAPI\SimpleForm;
 
 use pocketmine\player\Player;
@@ -59,12 +57,11 @@ final class ManageForm {
 					break;
 			}
 		});
-		$translator = RankSystem::getInstance()->getTranslator();
-		$form->setTitle($translator->translate($player, "form.manage.title"));
-		$form->setContent($translator->translate($player, "form.select_category"));
-		$form->addButton($translator->translate($player, "text.ranks"), SimpleForm::IMAGE_TYPE_PATH, "textures/ui/op");
-		$form->addButton($translator->translate($player, "text.users"), SimpleForm::IMAGE_TYPE_PATH, "textures/ui/FriendsIcon");
-		$form->addButton($translator->translate($player, "text.exit"), SimpleForm::IMAGE_TYPE_PATH, "textures/blocks/barrier");
+		$form->setTitle("RankSystem Manager");
+		$form->setContent("Select a category");
+		$form->addButton("Ranks", SimpleForm::IMAGE_TYPE_PATH, "textures/ui/op");
+		$form->addButton("Users", SimpleForm::IMAGE_TYPE_PATH, "textures/ui/FriendsIcon");
+		$form->addButton("Exit", SimpleForm::IMAGE_TYPE_PATH, "textures/blocks/barrier");
 		$form->sendToPlayer($player);
 	}
 }

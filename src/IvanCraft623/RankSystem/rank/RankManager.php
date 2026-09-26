@@ -37,6 +37,8 @@ use pocketmine\utils\Config;
 
 use pocketmine\utils\SingletonTrait;
 use RuntimeException;
+use function array_filter;
+use function array_values;
 use function in_array;
 use function is_array;
 use function is_string;
@@ -51,7 +53,8 @@ use function strtolower;
  * 	nametag: NameTagFormat,
  * 	chat: ChatFormat,
  * 	permissions: string[],
- * 	inheritance?: string[]
+ * 	inheritance?: string[],
+ * 	type?: string
  * }
  */
 final class RankManager {
@@ -79,7 +82,9 @@ final class RankManager {
 		$ranksData = $this->data->getAll();
 		foreach ($ranksData as $name => $data) {
 			$name = (string) $name;
-			$this->ranks[strtolower($name)] = new Rank($name, $data["nametag"], $data["chat"], $data["permissions"]);
+			# Fork Foxy : lecture du type du rank ("moderation" ou "game", defaut "game")
+			$type = RankType::fromConfig($data["type"] ?? null);
+			$this->ranks[strtolower($name)] = new Rank($name, $data["nametag"], $data["chat"], $data["permissions"], $type);
 		}
 
 		# Inheritance
@@ -214,10 +219,11 @@ final class RankManager {
 	 * @param ChatFormat    $chat
 	 * @param string[]      $permissions
 	 * @param string[]      $inheritance
+	 * @param string|null   $type "moderation", "game" ou null (defaut "game")
 	 */
-	public function create(string $name, array $nametag, array $chat, array $permissions = [], array $inheritance = []) : void {
+	public function create(string $name, array $nametag, array $chat, array $permissions = [], array $inheritance = [], ?string $type = null) : void {
 		if (!$this->exists($name)) {
-			$this->saveRankData($name, $nametag, $chat, $permissions, $inheritance);
+			$this->saveRankData($name, $nametag, $chat, $permissions, $inheritance, $type);
 		}
 	}
 
@@ -232,16 +238,42 @@ final class RankManager {
 	 * @param ChatFormat    $chat
 	 * @param string[]      $permissions
 	 * @param string[]      $inheritance
+	 * @param string|null   $type "moderation", "game" ou null pour conserver le type existant
 	 */
-	public function saveRankData(string $name, array $nametag, array $chat, array $permissions = [], array $inheritance = []) : void {
+	public function saveRankData(string $name, array $nametag, array $chat, array $permissions = [], array $inheritance = [], ?string $type = null) : void {
+		# Fork Foxy : si type non fourni, on conserve celui deja en base (ex: edition via formulaire)
+		if ($type === null) {
+			$existing = $this->data->get($name, []);
+			$type = is_array($existing) ? (string) ($existing["type"] ?? RankType::GAME->value) : RankType::GAME->value;
+		}
+		$type = RankType::fromConfig($type)->value;
 		$data = [
 			"nametag" => $nametag,
 			"chat" => $chat,
 			"permissions" => $permissions,
-			"inheritance" => $inheritance
+			"inheritance" => $inheritance,
+			"type" => $type
 		];
 		$this->data->set($name, $data);
 		$this->data->save();
 		$this->reload();
+	}
+
+	/**
+	 * Fork Foxy : ranks de moderation dans l'ordre hierarchique.
+	 *
+	 * @return Rank[]
+	 */
+	public function getModerationRanks() : array {
+		return array_values(array_filter($this->getHierarchy(), fn(Rank $rank) => $rank->isModeration()));
+	}
+
+	/**
+	 * Fork Foxy : grades de jeu dans l'ordre hierarchique.
+	 *
+	 * @return Rank[]
+	 */
+	public function getGameRanks() : array {
+		return array_values(array_filter($this->getHierarchy(), fn(Rank $rank) => $rank->isGame()));
 	}
 }

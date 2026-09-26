@@ -69,18 +69,11 @@ final class RemoveRankCommand extends BaseSubCommand {
 
 		$session = $this->plugin->getSessionManager()->get($user);
 		$session->onInitialize(function () use ($session, $sender, $rank) {
-			$translator = $this->plugin->getTranslator();
 			if (!$session->hasRank($rank)) {
-				$sender->sendMessage($translator->translate($sender, "user.remove_rank.no_rank", [
-					"{%user}" => $session->getName(),
-					"{%rank}" => $rank->getName()
-				]));
+				$sender->sendMessage("§c" . $session->getName() . " does not has the " . $rank->getName() . " rank!");
 			} else {
 				$session->removeRank($rank);
-				$sender->sendMessage($translator->translate($sender, "user.remove_rank.success", [
-					"{%user}" => $session->getName(),
-					"{%rank}" => $rank->getName()
-				]));
+				$sender->sendMessage("§bYou have successfully §cremoved§b the §e" . $rank->getName() . " §brank from §a" . $session->getName());
 			}
 		});
 	}

@@ -31,7 +31,6 @@ namespace IvanCraft623\RankSystem\command\args;
 
 use CortexPE\Commando\args\RawStringArgument;
 
-use IvanCraft623\RankSystem\RankSystem;
 use IvanCraft623\RankSystem\utils\Utils;
 
 use pocketmine\command\CommandSender;
@@ -44,7 +43,7 @@ final class TimeArgument extends RawStringArgument {
 
 	public function parse(string $argument, CommandSender $sender) : string {
 		//Hacky, but Commando no longer allow us to set our owns return types :(
-		$result = Utils::parseDuration($argument, RankSystem::getInstance()->getTranslator(), $sender);
+		$result = Utils::parseDuration($argument);
 		return $result !== null ? ((string) $result) : "null";
 	}
 }

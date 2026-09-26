@@ -51,14 +51,13 @@ final class CreditsCommand extends BaseSubCommand {
 	 * @param mixed[] $args
 	 */
 	public function onRun(CommandSender $sender, string $aliasUsed, array $args) : void {
-		$translator = $this->plugin->getTranslator();
 		$sender->sendMessage(
-			"§a---- §6" . $this->plugin->getName() . " §b" . $translator->translate($sender, "text.credits") . " §a----\n\n" .
-			"§e" . $translator->translate($sender, "text.author") . ": §7IvanCraft623 / IvanCraft236\n" .
-			"§e" . $translator->translate($sender, "text.website") . ": §7" . $this->plugin->getDescription()->getWebsite() . "\n" .
-			"§e" . $translator->translate($sender, "text.donations") . ": §7" . RankSystem::DONATIONS_URL . "\n" .
-			"§e" . $translator->translate($sender, "text.sponsors") . ": §7" . implode(", ", $this->plugin->getSponsors()) . "\n\n" .
-			$translator->translate($sender, "credits.text")
+			"§a---- §6" . $this->plugin->getName() . " §bCredits §a----\n\n" .
+			"§eAuthor: §7IvanCraft623 / IvanCraft236\n" .
+			"§eWebsite: §7" . $this->plugin->getDescription()->getWebsite() . "\n" .
+			"§eDonations: §7" . RankSystem::DONATIONS_URL . "\n" .
+			"§eSponsors: §7" . implode(", ", $this->plugin->getSponsors()) . "\n\n" .
+			"Made for the PocketMine-MP community"
 		);
 	}
 

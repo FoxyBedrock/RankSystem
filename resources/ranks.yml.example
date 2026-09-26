@@ -1,0 +1,222 @@
+---
+# Fork Foxy : chaque rank porte un "type".
+# - type: moderation -> rank staff, un seul a la fois, toujours affiche
+# - type: game       -> grade de joueur, cumulables, seul le plus haut est affiche
+
+# ============ RANKS DE MODERATION (du plus haut au plus bas) ============
+Owner:
+  type: moderation
+  nametag:
+    prefix: "§l§c[§4Owner§c]§r "
+    nameColor: "§c"
+  chat:
+    prefix: "§l§c[§4Owner§c]§r "
+    nameColor: "§c"
+    chatFormat: " §4» §f"
+  permissions:
+  # Fork Foxy : "*" = toutes les permissions enregistrees sur le serveur (equivalent op).
+  # Les guillemets sont obligatoires : * nu est un alias YAML invalide.
+  - "*"
+  inheritance:
+    - Admin
+Admin:
+  type: moderation
+  nametag:
+    prefix: "§9[§bAdmin§9]§r "
+    nameColor: "§9"
+  chat:
+    prefix: "§9[§bAdmin§9]§r "
+    nameColor: "§9"
+    chatFormat: " §9» §f"
+  permissions:
+  - pocketmine.broadcast
+  - pocketmine.command.gamemode
+  - pocketmine.command.give
+  - pocketmine.command.kick
+  - pocketmine.command.teleport
+  - pocketmine.command.time
+  inheritance:
+    - LeadMod
+LeadMod:
+  type: moderation
+  nametag:
+    prefix: "§5[§dLeadMod§5]§r "
+    nameColor: "§5"
+  chat:
+    prefix: "§5[§dLeadMod§5]§r "
+    nameColor: "§5"
+    chatFormat: " §5» §f"
+  permissions:
+  - pocketmine.command.kick
+  inheritance:
+    - Mod
+Mod:
+  type: moderation
+  nametag:
+    prefix: "§2[§aMod§2]§r "
+    nameColor: "§2"
+  chat:
+    prefix: "§2[§aMod§2]§r "
+    nameColor: "§2"
+    chatFormat: " §2» §f"
+  permissions: []
+  inheritance:
+    - Helper
+Helper:
+  type: moderation
+  nametag:
+    prefix: "§3[§bHelper§3]§r "
+    nameColor: "§3"
+  chat:
+    prefix: "§3[§bHelper§3]§r "
+    nameColor: "§3"
+    chatFormat: " §3» §f"
+  permissions: []
+  inheritance:
+    - Dev
+Dev:
+  type: moderation
+  nametag:
+    prefix: "§6[§eDev§6]§r "
+    nameColor: "§6"
+  chat:
+    prefix: "§6[§eDev§6]§r "
+    nameColor: "§6"
+    chatFormat: " §6» §f"
+  permissions: []
+  inheritance:
+    - Teams
+Teams:
+  type: moderation
+  nametag:
+    prefix: "§1[§9Teams§1]§r "
+    nameColor: "§1"
+  chat:
+    prefix: "§1[§9Teams§1]§r "
+    nameColor: "§1"
+    chatFormat: " §1» §f"
+  permissions: []
+  inheritance:
+    - Friend
+Friend:
+  type: moderation
+  nametag:
+    prefix: "§d[§5Friend§d]§r "
+    nameColor: "§d"
+  chat:
+    prefix: "§d[§5Friend§d]§r "
+    nameColor: "§d"
+    chatFormat: " §d» §f"
+  permissions: []
+  inheritance: []
+
+# ============ GRADES DE JEU (du plus haut au plus bas) ============
+Supreme:
+  type: game
+  nametag:
+    prefix: "§l§6[§eSupreme§6]§r "
+    nameColor: "§6"
+  chat:
+    prefix: "§l§6[§eSupreme§6]§r "
+    nameColor: "§6"
+    chatFormat: " §6: §f"
+  permissions: []
+  inheritance:
+    - Prestige
+Prestige:
+  type: game
+  nametag:
+    prefix: "§5[§dPrestige§5]§r "
+    nameColor: "§5"
+  chat:
+    prefix: "§5[§dPrestige§5]§r "
+    nameColor: "§5"
+    chatFormat: " §5: §f"
+  permissions: []
+  inheritance:
+    - Royal
+Royal:
+  type: game
+  nametag:
+    prefix: "§9[§bRoyal§9]§r "
+    nameColor: "§9"
+  chat:
+    prefix: "§9[§bRoyal§9]§r "
+    nameColor: "§9"
+    chatFormat: " §9: §f"
+  permissions: []
+  inheritance:
+    - Premium
+Premium:
+  type: game
+  nametag:
+    prefix: "§a[§2Premium§a]§r "
+    nameColor: "§a"
+  chat:
+    prefix: "§a[§2Premium§a]§r "
+    nameColor: "§a"
+    chatFormat: " §a: §f"
+  permissions: []
+  inheritance:
+    - Booster
+Booster:
+  type: game
+  nametag:
+    prefix: "§e[§6Booster§e]§r "
+    nameColor: "§e"
+  chat:
+    prefix: "§e[§6Booster§e]§r "
+    nameColor: "§e"
+    chatFormat: " §e: §f"
+  permissions: []
+  inheritance:
+    - Partner
+Partner:
+  type: game
+  nametag:
+    prefix: "§b[§3Partner§b]§r "
+    nameColor: "§b"
+  chat:
+    prefix: "§b[§3Partner§b]§r "
+    nameColor: "§b"
+    chatFormat: " §b: §f"
+  permissions: []
+  inheritance:
+    - Media
+Media:
+  type: game
+  nametag:
+    prefix: "§d[§5Media§d]§r "
+    nameColor: "§d"
+  chat:
+    prefix: "§d[§5Media§d]§r "
+    nameColor: "§d"
+    chatFormat: " §d: §f"
+  permissions: []
+  inheritance:
+    - Voter
+Voter:
+  type: game
+  nametag:
+    prefix: "§2[§aVoter§2]§r "
+    nameColor: "§2"
+  chat:
+    prefix: "§2[§aVoter§2]§r "
+    nameColor: "§2"
+    chatFormat: " §2: §f"
+  permissions: []
+  inheritance:
+    - Player
+Player:
+  type: game
+  nametag:
+    prefix: "§7[§fPlayer§7]§r "
+    nameColor: "§f"
+  chat:
+    prefix: "§7[§fPlayer§7]§r "
+    nameColor: "§f"
+    chatFormat: " §7: §f"
+  permissions:
+  - pocketmine.command.list
+  inheritance: []
+...

@@ -74,10 +74,7 @@ final class HelpCommand extends BaseSubCommand {
 		} else {
 			$pageNumber = $args["page"];
 		}
-		$sender->sendMessage($this->plugin->getTranslator()->translate($sender, "command.help.text", [
-			"{%page}" => $pageNumber,
-			"{%total_pages}" => $maxPageNumber
-		]));
+		$sender->sendMessage("§2--- Showing RankSystem help page " . $pageNumber . " of " . $maxPageNumber . " (/ranksystem help <page>) ---");
 		foreach ($chunkedCommands[$pageNumber - 1] as $subCommand) {
 			$sender->sendMessage("/ranksystem " . $subCommand->getName() . " §7(" . $subCommand->getDescription() . ")");
 		}

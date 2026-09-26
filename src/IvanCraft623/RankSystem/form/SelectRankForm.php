@@ -32,7 +32,6 @@ namespace IvanCraft623\RankSystem\form;
 use IvanCraft623\RankSystem\rank\Rank;
 
 use IvanCraft623\RankSystem\rank\RankManager;
-use IvanCraft623\RankSystem\RankSystem;
 use jojoe77777\FormAPI\SimpleForm;
 
 use pocketmine\player\Player;
@@ -52,7 +51,10 @@ final class SelectRankForm {
 	public function send(Player $player, string $title, ?array $ranks = null) : Promise {
 		/** @var PromiseResolver<Rank> $resolver */
 		$resolver = new PromiseResolver();
-		$form = new SimpleForm(function (Player $player, ?Rank $rank = null) use ($resolver) {
+		/** @var Rank[] $map rank name => Rank, used to resolve the label back to the object */
+		$map = [];
+		$form = new SimpleForm(function (Player $player, ?string $name = null) use ($resolver, &$map) {
+			$rank = $name === null ? null : ($map[$name] ?? null);
 			if ($rank === null) {
 				$resolver->reject();
 			} else {
@@ -60,9 +62,10 @@ final class SelectRankForm {
 			}
 		});
 		$form->setTitle($title);
-		$form->setContent(RankSystem::getInstance()->getTranslator()->translate($player, "form.select_rank.content"));
+		$form->setContent("Select a rank.");
 		foreach (($ranks ?? RankManager::getInstance()->getAll()) as $rank) {
-			$form->addButton($rank->getName(), -1, "", $rank);
+			$map[$rank->getName()] = $rank;
+			$form->addButton($rank->getName(), -1, "", $rank->getName());
 		}
 		$form->sendToPlayer($player);
 		return $resolver->getPromise();
